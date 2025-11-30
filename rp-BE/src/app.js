@@ -17,7 +17,11 @@ const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'], // Add your frontend URLs
+  origin: [
+    'http://localhost:3000', 
+    'http://localhost:5173',
+    process.env.FRONTEND_URL || 'https://kurangtidur-return-point-fe-likr.vercel.app'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -28,9 +32,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Ensure upload directory exists
+// Ensure upload directory exists (only for local development)
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
-if (!fs.existsSync(UPLOAD_DIR)) {
+if (!fs.existsSync(UPLOAD_DIR) && process.env.NODE_ENV !== 'production') {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
@@ -88,4 +92,5 @@ process.on('unhandledRejection', (err) => {
   server.close(() => process.exit(1));
 });
 
+// Export for Vercel
 module.exports = app;

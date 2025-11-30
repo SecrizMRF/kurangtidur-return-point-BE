@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 const uploadDir = path.join(__dirname, '../uploads');
 
@@ -18,7 +18,7 @@ const uploadFile = async (file) => {
   await ensureUploadsDir();
   
   const fileExt = path.extname(file.originalname);
-  const fileName = `${uuidv4()}${fileExt}`;
+  const fileName = `${crypto.randomUUID()}${fileExt}`;
   const filePath = path.join(uploadDir, fileName);
   
   await fs.rename(file.path, filePath);

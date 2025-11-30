@@ -20,8 +20,9 @@ app.use(cors({
   origin: [
     'http://localhost:3000', 
     'http://localhost:5173',
-    process.env.FRONTEND_URL || 'https://kurangtidur-return-point-fe-likr.vercel.app'
-  ],
+    process.env.FRONTEND_URL,
+    'https://kurangtidur-return-point-fe-likr.vercel.app'
+  ].filter(Boolean), // Remove any undefined/null values
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

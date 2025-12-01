@@ -1,5 +1,37 @@
 const ctrl = require("../services/rpServices")
 
+async function getItemsByType(req, res) {
+    try {
+        const { type } = req.query;
+        let items;
+        
+        if (type === 'found') {
+            items = await ctrl.getFoundItems();
+        } else if (type === 'lost') {
+            items = await ctrl.getLostItems();
+        } else {
+            return res.status(400).json({
+                status: "error",
+                code: 400,
+                message: "Invalid type parameter. Use 'found' or 'lost'"
+            });
+        }
+        
+        res.status(200).json({
+            status: "success",
+            code: 200,
+            message: "ok jalan",
+            data: items
+        });
+    } catch (err) {
+        res.status(500).json({
+            status: "gagal",
+            code: 500,
+            message: err.message
+        });
+    }
+}
+
 async function getFoundItems(req, res) {
     try {
         const items = await ctrl.getFoundItems()
@@ -82,4 +114,4 @@ async function deleteItem(req, res){
     }
 }
 
-module.exports = {getFoundItems, getLostItems, addItem, updateItem, deleteItem }
+module.exports = {getFoundItems, getLostItems, addItem, updateItem, deleteItem, getItemsByType }

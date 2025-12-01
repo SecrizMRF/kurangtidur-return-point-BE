@@ -35,10 +35,11 @@ async function updateItem(id, data) {
 }
 
 async function deleteItem(id) {
-    const index = items.findIndex(e => e.id === parseInt(id));
-    if (index === -1) return null;
-    const removed = items.splice(index, 1);
-    return removed[0];
+    const result = await pool.query(
+        "DELETE FROM items WHERE id = $1 RETURNING *",
+        [id]
+    );
+    return result.rows[0];
 }
 
 

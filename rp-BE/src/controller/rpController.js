@@ -54,16 +54,32 @@ async function addItem(req, res) {
     }
 }
 
-function updateItem(req, res) {
-    const updatedItem = ctrl.updateItem(req.params.id, req.body)
-    if(!updatedItem) return res.status(404).json({status: 'error', message: 'Baarang tidak ditemukan'})
-    res.json({status: 'sukses', data: updatedItem})
+async function updateItem(req, res) {
+    try {
+        const updatedItem = await ctrl.updateItem(req.params.id, req.body)
+        if(!updatedItem) return res.status(404).json({status: 'error', message: 'Barang tidak ditemukan'})
+        res.json({status: 'sukses', data: updatedItem})
+    } catch (err) {
+        res.status(500).json({
+            status: 'gagal',
+            code: 500,
+            message: err.message
+        })
+    }
 }
 
-function deleteItem(req, res){
-    const deletedItem = ctrl.deleteItem(req.params.id)
-    if(!deletedItem) return res.status(404).json({status: 'error', message: 'Barang tidak ditemukan'})
-    res.json({status: 'sukses', data: deletedItem})
+async function deleteItem(req, res){
+    try {
+        const deletedItem = await ctrl.deleteItem(req.params.id)
+        if(!deletedItem) return res.status(404).json({status: 'error', message: 'Barang tidak ditemukan'})
+        res.json({status: 'sukses', data: deletedItem})
+    } catch (err) {
+        res.status(500).json({
+            status: 'gagal',
+            code: 500,
+            message: err.message
+        })
+    }
 }
 
 module.exports = {getFoundItems, getLostItems, addItem, updateItem, deleteItem }

@@ -54,9 +54,9 @@ const testDbConnection = async () => {
 };
 
 // Routes
+app.use('/api', api)
 app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
-app.use('/api', api)
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -23,6 +23,19 @@ router.get(
   itemController.getItems
 );
 
+// IMPORTANT: Place specific routes like /me/items BEFORE generic routes like /:id
+// This prevents /me/items from being matched as /:id with id='me'
+router.get(
+  '/me/items',
+  isLogin,
+  [
+    query('type').optional().isIn(['lost', 'found', 'all']),
+    query('status').optional().isIn(['dicari', 'ditemukan', 'diclaim', 'all'])
+  ],
+  validate,
+  itemController.getMyItems
+);
+
 router.get(
   '/:id',
   [
@@ -84,17 +97,6 @@ router.delete(
   ],
   validate,
   itemController.deleteItem
-);
-
-router.get(
-  '/me/items',
-  isLogin,
-  [
-    query('type').optional().isIn(['lost', 'found', 'all']),
-    query('status').optional().isIn(['dicari', 'ditemukan', 'diclaim', 'all'])
-  ],
-  validate,
-  itemController.getMyItems
 );
 
 module.exports = router;

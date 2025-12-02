@@ -54,9 +54,10 @@ const testDbConnection = async () => {
 };
 
 // Routes
-app.use('/api', api)
+// IMPORTANT: Use new itemRoutes instead of old rpRoutes
+// app.use('/api', api)  // OLD - DO NOT USE
 app.use('/api/auth', authRoutes);
-app.use('/api/items', itemRoutes);
+app.use('/api/items', itemRoutes);  // NEW - itemRoutes handles /api/items correctly
 
 // Health check endpoint
 app.get('/health', (req, res) => {

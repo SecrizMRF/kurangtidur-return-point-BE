@@ -55,7 +55,11 @@ const itemController = {
   async getItems(req, res, next) {
     try {
       const { type = 'all', status = 'all', page = 1, limit = 20, search = '' } = req.query;
+      console.log('=== BACKEND getItems called ===');
+      console.log('Full req.query:', req.query);
       console.log('Backend received params:', { type, status, page, limit, search });
+      console.log('Type value:', type, 'Type typeof:', typeof type);
+      console.log('Status value:', status, 'Status typeof:', typeof status);
       
       // Convert to integers
       const limitNum = parseInt(limit) || 20;

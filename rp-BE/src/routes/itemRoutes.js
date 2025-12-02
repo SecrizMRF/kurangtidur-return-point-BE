@@ -5,7 +5,7 @@ const { isLogin, isOwnerOrAdmin } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
 // Validation middleware
-const { body, param } = require('express-validator');
+const { body, param, query } = require('express-validator');
 const validate = require('../middleware/validate');
 
 // Public routes
@@ -13,11 +13,11 @@ router.get(
   '/',
   [
     // Query parameter validation
-    param('type').optional().isIn(['lost', 'found', 'all']),
-    param('status').optional().isIn(['dicari', 'ditemukan', 'diclaim', 'all']),
-    param('page').optional().isInt({ min: 1 }),
-    param('limit').optional().isInt({ min: 1, max: 100 }),
-    param('search').optional().trim().escape()
+    query('type').optional().isIn(['lost', 'found', 'all']),
+    query('status').optional().isIn(['dicari', 'ditemukan', 'diclaim', 'all']),
+    query('page').optional().isInt({ min: 1 }),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('search').optional().trim().escape()
   ],
   validate,
   itemController.getItems
@@ -90,8 +90,8 @@ router.get(
   '/me/items',
   isLogin,
   [
-    param('type').optional().isIn(['lost', 'found', 'all']),
-    param('status').optional().isIn(['pending', 'claimed', 'returned', 'closed', 'all'])
+    query('type').optional().isIn(['lost', 'found', 'all']),
+    query('status').optional().isIn(['dicari', 'ditemukan', 'diclaim', 'all'])
   ],
   validate,
   itemController.getMyItems

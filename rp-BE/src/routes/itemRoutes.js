@@ -49,7 +49,18 @@ router.get(
 router.post(
   '/',
   isLogin,
+  (req, res, next) => {
+    console.log('POST /items - Before multer');
+    console.log('Content-Type:', req.get('Content-Type'));
+    next();
+  },
   upload.single('photo'),
+  (req, res, next) => {
+    console.log('POST /items - After multer');
+    console.log('req.body:', req.body);
+    console.log('req.file:', req.file);
+    next();
+  },
   [
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('description').trim().notEmpty().withMessage('Description is required'),

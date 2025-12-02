@@ -6,16 +6,26 @@ const itemController = {
   // Create a new item
   async createItem(req, res, next) {
     try {
+      console.log('=== CREATE ITEM CALLED ===');
+      console.log('req.body:', req.body);
+      console.log('req.file:', req.file);
+      console.log('req.headers:', req.headers);
+      console.log('req.user:', req.user);
+      
       const { title, description, item_type, location, date, contact_info } = req.body;
       const userId = req.user.id;
 
+      console.log('Extracted from req.body:', { title, description, item_type, location, date, contact_info });
+
       // Validate required fields
       if (!title || !item_type || !location) {
+        console.log('Missing required fields:', { title, item_type, location });
         return res.status(400).json({ message: 'Please provide all required fields' });
       }
 
       // Validate item type
       if (!['lost', 'found'].includes(item_type)) {
+        console.log('Invalid item type:', item_type);
         return res.status(400).json({ message: 'Invalid item type. Must be "lost" or "found"' });
       }
 
@@ -24,8 +34,10 @@ const itemController = {
       // Handle file upload if exists
       if (req.file) {
         try {
+          console.log('Processing file upload:', req.file.originalname);
           const result = await uploadFile(req.file);
           image_url = result.url;
+          console.log('File uploaded successfully:', image_url);
         } catch (uploadError) {
           console.error('Error uploading file:', uploadError);
           return res.status(500).json({ message: 'Error uploading file' });
@@ -33,6 +45,8 @@ const itemController = {
       }
 
       // Create item in database
+      console.log('Creating item with data:', { item_type, title, location, date, description, contact_info });
+      
       const result = await pool.query(
         `INSERT INTO items 
         (type, name, location, date, description, status, contact, photo, reporter)
@@ -40,6 +54,8 @@ const itemController = {
         RETURNING *`,
         [item_type, title, location, date, description, 'dicari', contact_info, image_url, req.user.username]
       );
+
+      console.log('Item created successfully:', result.rows[0]);
 
       res.status(201).json({
         success: true,

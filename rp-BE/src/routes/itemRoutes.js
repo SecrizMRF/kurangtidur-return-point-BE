@@ -80,7 +80,7 @@ router.put(
   isLogin,
   [
     param('id').isInt({ min: 1 }).withMessage('Invalid item ID'),
-    body('status').isIn(['pending', 'claimed', 'returned', 'closed']).withMessage('Invalid status')
+    body('status').isIn(['dicari', 'ditemukan', 'diclaim']).withMessage('Invalid status')
   ],
   validate,
   itemController.updateItemStatus

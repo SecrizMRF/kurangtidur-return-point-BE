@@ -114,38 +114,7 @@ router.delete(
 
 // ===== HISTORY ROUTES =====
 
-// Get history for a specific item
-router.get(
-  '/:id/history',
-  isLogin,
-  [
-    param('id').isInt({ min: 1 }).withMessage('Invalid item ID'),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('offset').optional().isInt({ min: 0 })
-  ],
-  validate,
-  async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const { limit = 20, offset = 0 } = req.query;
-
-      console.log(`📖 Fetching history for item ${id}`);
-
-      const history = await historyService.getItemHistory(id, limit, offset);
-      const formattedHistory = history.map(h => historyService.formatHistory(h));
-
-      res.json({
-        success: true,
-        data: formattedHistory
-      });
-    } catch (error) {
-      console.error('Error fetching item history:', error);
-      next(error);
-    }
-  }
-);
-
-// Get all history (admin only)
+// Get all history (admin only) - MUST come before /:id/history to avoid route collision
 router.get(
   '/admin/history/all',
   isLogin,
@@ -160,6 +129,10 @@ router.get(
   async (req, res, next) => {
     try {
       const { action, changedBy, limit = 50, offset = 0 } = req.query;
+      
+      // Convert to integers
+      const limitNum = parseInt(limit, 10);
+      const offsetNum = parseInt(offset, 10);
 
       console.log('📖 Admin fetching all history');
 
@@ -167,7 +140,7 @@ router.get(
       if (action) filters.action = action;
       if (changedBy) filters.changedBy = changedBy;
 
-      const history = await historyService.getAllHistory(filters, limit, offset);
+      const history = await historyService.getAllHistory(filters, limitNum, offsetNum);
       const count = await historyService.getAllHistoryCount(filters);
       const formattedHistory = history.map(h => historyService.formatHistory(h));
 
@@ -175,11 +148,46 @@ router.get(
         success: true,
         data: formattedHistory,
         total: count,
-        page: Math.floor(offset / limit) + 1,
-        pages: Math.ceil(count / limit)
+        page: Math.floor(offsetNum / limitNum) + 1,
+        pages: Math.ceil(count / limitNum)
       });
     } catch (error) {
       console.error('Error fetching all history:', error);
+      next(error);
+    }
+  }
+);
+
+// Get history for a specific item
+router.get(
+  '/:id/history',
+  isLogin,
+  [
+    param('id').isInt({ min: 1 }).withMessage('Invalid item ID'),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('offset').optional().isInt({ min: 0 })
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { limit = 20, offset = 0 } = req.query;
+      
+      // Convert to integers
+      const limitNum = parseInt(limit, 10);
+      const offsetNum = parseInt(offset, 10);
+
+      console.log(`📖 Fetching history for item ${id}`);
+
+      const history = await historyService.getItemHistory(id, limitNum, offsetNum);
+      const formattedHistory = history.map(h => historyService.formatHistory(h));
+
+      res.json({
+        success: true,
+        data: formattedHistory
+      });
+    } catch (error) {
+      console.error('Error fetching item history:', error);
       next(error);
     }
   }

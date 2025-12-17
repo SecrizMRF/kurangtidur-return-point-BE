@@ -47,6 +47,13 @@ const historyService = {
     try {
       console.log(`📖 Fetching history for item ${itemId}`);
       
+      // Ensure parameters are valid numbers
+      const numItemId = parseInt(itemId, 10);
+      const numLimit = parseInt(limit, 10) || 20;
+      const numOffset = parseInt(offset, 10) || 0;
+      
+      console.log(`📖 Query - itemId: ${numItemId}, limit: ${numLimit}, offset: ${numOffset}`);
+      
       const result = await pool.query(
         `SELECT 
           id,
@@ -61,7 +68,7 @@ const historyService = {
          WHERE item_id = $1
          ORDER BY changed_at DESC
          LIMIT $2 OFFSET $3`,
-        [itemId, limit, offset]
+        [numItemId, numLimit, numOffset]
       );
 
       console.log(`✅ Found ${result.rows.length} history records`);
@@ -81,6 +88,10 @@ const historyService = {
   async getAllHistory(filters = {}, limit = 50, offset = 0) {
     try {
       console.log('📖 Fetching all history with filters:', filters);
+      
+      // Ensure numeric parameters
+      const numLimit = parseInt(limit, 10) || 50;
+      const numOffset = parseInt(offset, 10) || 0;
       
       let query = 'SELECT * FROM item_history WHERE 1=1';
       const params = [];
@@ -111,7 +122,10 @@ const historyService = {
       }
 
       query += ` ORDER BY changed_at DESC LIMIT $${paramCount++} OFFSET $${paramCount}`;
-      params.push(limit, offset);
+      params.push(numLimit, numOffset);
+
+      console.log('📖 Query:', query);
+      console.log('📖 Params:', params);
 
       const result = await pool.query(query, params);
       

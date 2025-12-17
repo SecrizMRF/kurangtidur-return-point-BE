@@ -25,10 +25,21 @@ CREATE TABLE items (
   created_at TIMESTAMP DEFAULT now()
 );
 
-INSERT INTO items (type, name, location, date, description, contact, photo, reporter)
-VALUES
-('found','Black Wallet','Library', now() - interval '2 days', 'Black leather wallet', '081100111', '/uploads/example1.jpg', 'alice'),
-('lost','Silver Watch','Cafeteria', now() - interval '5 days', 'Analog watch with scratches', '081122233', '/uploads/example2.jpg', 'bob');
+-- History/Activity Log Table for tracking item changes
+CREATE TABLE item_history (
+  id SERIAL PRIMARY KEY,
+  item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+  action VARCHAR(50) NOT NULL CHECK (action IN ('created', 'updated', 'status_changed', 'deleted')),
+  old_data JSONB, -- Store old values as JSON (NULL for created/deleted actions)
+  new_data JSONB, -- Store new values as JSON (NULL for deleted actions)
+  changed_by VARCHAR(100) NOT NULL, -- Username who made the change
+  changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  description TEXT, -- Human-readable description of what changed
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- -- indexes
--- CREATE INDEX idx_items_type_created ON items(type, created_at DESC);
+-- Create indexes for faster queries
+CREATE INDEX idx_item_history_item_id ON item_history(item_id);
+CREATE INDEX idx_item_history_changed_at ON item_history(changed_at DESC);
+CREATE INDEX idx_item_history_action ON item_history(action);
+CREATE INDEX idx_items_type_created ON items(type, created_at DESC);

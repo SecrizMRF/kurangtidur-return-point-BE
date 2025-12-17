@@ -1,5 +1,6 @@
 const pool = require('../db');
 const { uploadFile, deleteFile } = require('../services/fileService');
+const historyService = require('../services/historyService');
 const { validationResult } = require('express-validator');
 
 const itemController = {
@@ -56,6 +57,30 @@ const itemController = {
       );
 
       console.log('Item created successfully:', result.rows[0]);
+
+      // 📝 Log to history
+      try {
+        await historyService.logHistory(
+          result.rows[0].id,
+          'created',
+          null,
+          {
+            type: item_type,
+            name: title,
+            location,
+            date,
+            description,
+            contact: contact_info,
+            photo: image_url,
+            status: 'dicari'
+          },
+          req.user.username,
+          `Item "${title}" created as ${item_type} item`
+        );
+      } catch (historyError) {
+        console.error('⚠️ Could not log history:', historyError.message);
+        // Don't fail the request if history logging fails
+      }
 
       res.status(201).json({
         success: true,
@@ -266,12 +291,90 @@ const itemController = {
 
       console.log('Item updated successfully');
 
+      // 📝 Log to history - track what changed
+      try {
+        const changes = {};
+        if (item.type !== item_type) changes.type = { old: item.type, new: item_type };
+        if (item.name !== title) changes.name = { old: item.name, new: title };
+        if (item.location !== location) changes.location = { old: item.location, new: location };
+        if (item.date !== date) changes.date = { old: item.date, new: date };
+        if (item.description !== description) changes.description = { old: item.description, new: description };
+        if (item.contact !== contact_info) changes.contact = { old: item.contact, new: contact_info };
+
+        const changedFields = Object.keys(changes);
+        
+        await historyService.logHistory(
+          id,
+          'updated',
+          { ...item },
+          updateResult.rows[0],
+          req.user.username,
+          `Updated fields: ${changedFields.join(', ')}`
+        );
+      } catch (historyError) {
+        console.error('⚠️ Could not log history:', historyError.message);
+      }
+
       res.json({
         success: true,
         data: updateResult.rows[0]
       });
     } catch (error) {
       console.error('Error updating item:', error);
+      next(error);
+    }
+  },
+
+  // Update item status
+  async updateItemStatus(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      console.log('updateItemStatus called with:', { id, status });
+
+      // Check if item exists
+      const itemResult = await pool.query(
+        'SELECT * FROM items WHERE id = $1',
+        [id]
+      );
+
+      if (itemResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Item not found' });
+      }
+
+      const item = itemResult.rows[0];
+
+      // Only allow owner or admin to update status
+      if (item.reporter !== req.user.username && req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Not authorized to update this item' });
+      }
+
+      const result = await pool.query(
+        'UPDATE items SET status = $1 WHERE id = $2 RETURNING *',
+        [status, id]
+      );
+
+      // 📝 Log to history
+      try {
+        await historyService.logHistory(
+          id,
+          'status_changed',
+          { status: item.status },
+          { status: status },
+          req.user.username,
+          `Status changed from "${item.status}" to "${status}"`
+        );
+      } catch (historyError) {
+        console.error('⚠️ Could not log history:', historyError.message);
+      }
+
+      res.json({
+        success: true,
+        data: result.rows[0]
+      });
+    } catch (error) {
+      console.error('Error updating item status:', error);
       next(error);
     }
   },
@@ -325,6 +428,21 @@ const itemController = {
       }
 
       console.log('Deleting item from database');
+      
+      // 📝 Log to history BEFORE deleting
+      try {
+        await historyService.logHistory(
+          id,
+          'deleted',
+          { ...item },
+          null,
+          req.user.username,
+          `Item "${item.name}" deleted`
+        );
+      } catch (historyError) {
+        console.error('⚠️ Could not log history:', historyError.message);
+      }
+
       await pool.query('DELETE FROM items WHERE id = $1', [id]);
       console.log('Item deleted successfully');
 

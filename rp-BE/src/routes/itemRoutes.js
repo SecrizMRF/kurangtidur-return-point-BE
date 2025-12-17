@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const itemController = require('../controllers/itemController');
+const historyService = require('../services/historyService');
 const { isLogin, isOwnerOrAdmin } = require('../middleware/auth');
+const { isAdmin } = require('../middleware/admin');
 const upload = require('../middleware/upload');
 
 // Validation middleware
@@ -108,6 +110,79 @@ router.delete(
   ],
   validate,
   itemController.deleteItem
+);
+
+// ===== HISTORY ROUTES =====
+
+// Get history for a specific item
+router.get(
+  '/:id/history',
+  isLogin,
+  [
+    param('id').isInt({ min: 1 }).withMessage('Invalid item ID'),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('offset').optional().isInt({ min: 0 })
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { limit = 20, offset = 0 } = req.query;
+
+      console.log(`📖 Fetching history for item ${id}`);
+
+      const history = await historyService.getItemHistory(id, limit, offset);
+      const formattedHistory = history.map(h => historyService.formatHistory(h));
+
+      res.json({
+        success: true,
+        data: formattedHistory
+      });
+    } catch (error) {
+      console.error('Error fetching item history:', error);
+      next(error);
+    }
+  }
+);
+
+// Get all history (admin only)
+router.get(
+  '/admin/history/all',
+  isLogin,
+  isAdmin,
+  [
+    query('action').optional().isIn(['created', 'updated', 'status_changed', 'deleted']),
+    query('changedBy').optional().trim(),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('offset').optional().isInt({ min: 0 })
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { action, changedBy, limit = 50, offset = 0 } = req.query;
+
+      console.log('📖 Admin fetching all history');
+
+      const filters = {};
+      if (action) filters.action = action;
+      if (changedBy) filters.changedBy = changedBy;
+
+      const history = await historyService.getAllHistory(filters, limit, offset);
+      const count = await historyService.getAllHistoryCount(filters);
+      const formattedHistory = history.map(h => historyService.formatHistory(h));
+
+      res.json({
+        success: true,
+        data: formattedHistory,
+        total: count,
+        page: Math.floor(offset / limit) + 1,
+        pages: Math.ceil(count / limit)
+      });
+    } catch (error) {
+      console.error('Error fetching all history:', error);
+      next(error);
+    }
+  }
 );
 
 module.exports = router;

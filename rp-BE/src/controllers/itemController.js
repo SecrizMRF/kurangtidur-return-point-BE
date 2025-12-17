@@ -256,6 +256,7 @@ const itemController = {
       
       console.log('updateItem called with params:', req.params);
       console.log('Request body (JSON):', req.body);
+      console.log('req.file:', req.file);
       console.log('User info:', req.user);
 
       // Check if item exists
@@ -280,13 +281,37 @@ const itemController = {
 
       console.log('Authorization passed, proceeding with update');
 
-      // Update item in database (keep existing photo)
+      // Handle photo upload if new file provided
+      let photo_url = item.photo; // Keep existing photo by default
+      
+      if (req.file) {
+        try {
+          console.log('Processing new file upload:', req.file.originalname);
+          const result = await uploadFile(req.file);
+          photo_url = result.url;
+          console.log('File uploaded successfully:', photo_url);
+          
+          // Delete old photo if it exists and is not a URL
+          if (item.photo && !item.photo.includes('http')) {
+            try {
+              await deleteFile(item.photo);
+            } catch (deleteErr) {
+              console.warn('Could not delete old file:', deleteErr.message);
+            }
+          }
+        } catch (uploadError) {
+          console.error('Error uploading file:', uploadError);
+          return res.status(500).json({ message: 'Error uploading file' });
+        }
+      }
+
+      // Update item in database
       const updateResult = await pool.query(
         `UPDATE items 
-        SET type = $1, name = $2, location = $3, date = $4, description = $5, contact = $6
-        WHERE id = $7
+        SET type = $1, name = $2, location = $3, date = $4, description = $5, contact = $6, photo = $7
+        WHERE id = $8
         RETURNING *`,
-        [item_type, title, location, date, description, contact_info, id]
+        [item_type, title, location, date, description, contact_info, photo_url, id]
       );
 
       console.log('Item updated successfully');
@@ -300,6 +325,7 @@ const itemController = {
         if (item.date !== date) changes.date = { old: item.date, new: date };
         if (item.description !== description) changes.description = { old: item.description, new: description };
         if (item.contact !== contact_info) changes.contact = { old: item.contact, new: contact_info };
+        if (photo_url !== item.photo) changes.photo = { old: item.photo, new: photo_url };
 
         const changedFields = Object.keys(changes);
         

@@ -89,6 +89,7 @@ router.put(
 router.put(
   '/:id',
   isLogin,
+  upload.single('photo'),
   [
     param('id').isInt({ min: 1 }).withMessage('Invalid item ID'),
     body('title').trim().notEmpty().withMessage('Title is required'),
